@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/react-chords/static/css/main.cd3bc0f0.css",
-    "main.js": "/react-chords/static/js/main.551503f9.js",
+    "main.js": "/react-chords/static/js/main.f5feaa3a.js",
     "index.html": "/react-chords/index.html",
     "main.cd3bc0f0.css.map": "/react-chords/static/css/main.cd3bc0f0.css.map",
-    "main.551503f9.js.map": "/react-chords/static/js/main.551503f9.js.map"
+    "main.f5feaa3a.js.map": "/react-chords/static/js/main.f5feaa3a.js.map"
   },
   "entrypoints": [
     "static/css/main.cd3bc0f0.css",
-    "static/js/main.551503f9.js"
+    "static/js/main.f5feaa3a.js"
   ]
 }

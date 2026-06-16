@@ -55,6 +55,24 @@ describe('Cavaquinho Instrument Support', () => {
     expect(renderedPositions).toHaveLength(cMajor.positions.length);
   });
 
+  test('uses expanded cavaquinho chord data for C suffixes', () => {
+    const expectedCounts = {
+      minor: 3,
+      m7: 11,
+      m7b5: 8,
+      dim: 12,
+      dim7: 12,
+      maj7: 11
+    };
+
+    Object.entries(expectedCounts).forEach(([suffix, count]) => {
+      const chord = cavaquinhoChords.chords.C.find(chord => chord.suffix === suffix);
+
+      expect(chord).toBeDefined();
+      expect(chord.positions).toHaveLength(count);
+    });
+  });
+
   test('renders cavaquinho diagrams with six visible frets', () => {
     window.history.pushState({}, '', '/cavaquinho/C');
 
