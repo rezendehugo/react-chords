@@ -6,6 +6,7 @@ import ukuleleChords from '@tombatossals/chords-db/lib/ukulele.json';
 import pianoChords from '@tombatossals/chords-db/lib/piano.json';
 import cavaquinhoChords from '@tombatossals/chords-db/lib/cavaquinho.json';
 import { addMidiToPosition } from '@tombatossals/react-chords/lib/Chord/midiUtils';
+import { optimizeProgression } from './progressionOptimizer';
 import './App.css';
 
 const instruments = {
@@ -53,7 +54,7 @@ const instruments = {
         chords: cavaquinhoChords,
         config: {
             strings: 4,
-            fretsOnChord: 4,
+            fretsOnChord: 6,
             name: 'Cavaquinho',
             keys: [],
             tunings: {
@@ -70,6 +71,14 @@ const instruments = {
  * @param {string} suffix - The chord suffix (e.g., 'major', 'm').
  * @returns {string} The formatted chord name.
  */
+const formatSuffix = (suffix) => {
+    if (suffix === 'm7b5') {
+        return 'm7(5b)';
+    }
+
+    return suffix.replace(/sharp/g, '#').replace(/flat/g, 'b');
+};
+
 const formatChordName = (key, suffix) => {
     const formattedKey = key.replace('sharp', '#').replace('flat', 'b');
     
@@ -78,9 +87,201 @@ const formatChordName = (key, suffix) => {
         return formattedKey;
     }
 
-    const formattedSuffix = suffix.replace(/sharp/g, '#').replace(/flat/g, 'b');
-    return `${formattedKey}${formattedSuffix}`;
+    return `${formattedKey}${formatSuffix(suffix)}`;
 };
+
+const defaultProgression = [
+    { key: 'C', suffix: 'major' },
+    { key: 'A', suffix: 'm7' },
+    { key: 'D', suffix: 'm7' },
+    { key: 'G', suffix: '7' }
+];
+
+const getCavaquinhoSuffixes = (key) =>
+    (cavaquinhoChords.chords[key] || []).map(chord => chord.suffix);
+
+const createProgressionStep = () => ({ key: 'C', suffix: 'major' });
+
+const loadSavedProgression = () => {
+    try {
+        const saved = window.localStorage.getItem('cavaquinhoProgression');
+        if (!saved) {
+            return defaultProgression;
+        }
+
+        const parsed = JSON.parse(saved);
+        if (!Array.isArray(parsed) || parsed.length === 0) {
+            return defaultProgression;
+        }
+
+        return parsed.filter(step => step.key && step.suffix);
+    } catch (error) {
+        return defaultProgression;
+    }
+};
+
+function ProgressionOptimizerPage() {
+    const keys = Object.keys(cavaquinhoChords.chords);
+    const [progression, setProgression] = useState(loadSavedProgression);
+    const result = React.useMemo(
+        () => optimizeProgression(progression, cavaquinhoChords),
+        [progression]
+    );
+
+    useEffect(() => {
+        window.localStorage.setItem('cavaquinhoProgression', JSON.stringify(progression));
+    }, [progression]);
+
+    const updateStep = (index, field, value) => {
+        setProgression(current => current.map((step, stepIndex) => {
+            if (stepIndex !== index) {
+                return step;
+            }
+
+            if (field === 'key') {
+                const suffixes = getCavaquinhoSuffixes(value);
+                const suffix = suffixes.includes(step.suffix) ? step.suffix : suffixes[0];
+
+                return { key: value, suffix };
+            }
+
+            return { ...step, [field]: value };
+        }));
+    };
+
+    const removeStep = (index) => {
+        setProgression(current => current.length === 1
+            ? current
+            : current.filter((_, stepIndex) => stepIndex !== index));
+    };
+
+    return (
+        <div className="text-center bg-white text-gray-800">
+            <header className="bg-gray-800 text-white p-5 flex justify-between items-center">
+                <h1 className="text-2xl">Chords Database</h1>
+                <Link to="/cavaquinho" className="text-white underline">Back to Cavaquinho</Link>
+            </header>
+            <div className="p-5 max-w-7xl mx-auto text-left">
+                <ul className="flex list-none py-4 px-0 m-0 border-b border-gray-200 gap-3">
+                    <li>
+                        <Link to="/cavaquinho" className="inline-block font-bold rounded py-1 px-3 cursor-pointer no-underline border border-transparent text-blue-500 hover:bg-gray-200">
+                            Cavaquinho
+                        </Link>
+                    </li>
+                    <li>
+                        <Link to="/cavaquinho/progression" className="inline-block font-bold rounded py-1 px-3 cursor-pointer no-underline border bg-blue-500 text-white border-blue-200">
+                            Progression
+                        </Link>
+                    </li>
+                </ul>
+
+                <h2 className="text-3xl font-medium my-4">Progression Optimizer</h2>
+                <p className="mb-4 text-gray-700">
+                    Choose a chord sequence and the tester will pick cavaquinho shapes with minimum finger movement.
+                </p>
+
+                <div className="grid gap-3 mb-5">
+                    {progression.map((step, index) => {
+                        const suffixes = getCavaquinhoSuffixes(step.key);
+
+                        return (
+                            <div key={index} className="flex flex-wrap items-center gap-3 p-3 border border-gray-200 rounded">
+                                <span className="font-bold w-8">{index + 1}.</span>
+                                <label>
+                                    <span className="sr-only">Key</span>
+                                    <select
+                                        aria-label={`Chord ${index + 1} key`}
+                                        value={step.key}
+                                        onChange={(event) => updateStep(index, 'key', event.target.value)}
+                                        className="border border-gray-300 rounded p-2"
+                                    >
+                                        {keys.map(key => (
+                                            <option key={key} value={key}>{key}</option>
+                                        ))}
+                                    </select>
+                                </label>
+                                <label>
+                                    <span className="sr-only">Suffix</span>
+                                    <select
+                                        aria-label={`Chord ${index + 1} suffix`}
+                                        value={step.suffix}
+                                        onChange={(event) => updateStep(index, 'suffix', event.target.value)}
+                                        className="border border-gray-300 rounded p-2"
+                                    >
+                                        {suffixes.map(suffix => (
+                                            <option key={suffix} value={suffix}>{formatSuffix(suffix) || 'major'}</option>
+                                        ))}
+                                    </select>
+                                </label>
+                                <strong>{formatChordName(step.key, step.suffix)}</strong>
+                                <button
+                                    type="button"
+                                    onClick={() => removeStep(index)}
+                                    className="border border-gray-300 rounded py-2 px-3 hover:bg-gray-100"
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                <div className="flex gap-3 mb-6">
+                    <button
+                        type="button"
+                        onClick={() => setProgression(current => current.concat(createProgressionStep()))}
+                        className="bg-blue-500 text-white rounded py-2 px-4"
+                    >
+                        Add chord
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setProgression(defaultProgression)}
+                        className="border border-gray-300 rounded py-2 px-4 hover:bg-gray-100"
+                    >
+                        Reset
+                    </button>
+                </div>
+
+                {result.missing.length > 0
+                    ? (
+                        <div className="p-4 border border-red-200 bg-red-50 rounded">
+                            Missing data for {result.missing.map(step => formatChordName(step.key, step.suffix)).join(', ')}.
+                        </div>
+                      )
+                    : (
+                        <>
+                            <div className="mb-5 p-4 border border-gray-200 rounded bg-gray-50">
+                                <strong>Total movement score:</strong> {result.totalScore.toFixed(1)}
+                                <span className="ml-3">
+                                    {result.transitions.map((score, index) => (
+                                        <span key={index} className="inline-block ml-2">
+                                            {formatChordName(result.steps[index].key, result.steps[index].suffix)} → {formatChordName(result.steps[index + 1].key, result.steps[index + 1].suffix)}: {score.toFixed(1)}
+                                        </span>
+                                    ))}
+                                </span>
+                            </div>
+                            <div className="chords-grid grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-5 suffix-selected">
+                                {result.steps.map((step, index) => (
+                                    <div key={`${step.key}-${step.suffix}-${index}`} className="text-center">
+                                        <ChordBlock
+                                            instrument={instruments.cavaquinho.config}
+                                            position={step.position}
+                                            name={formatChordName(step.key, step.suffix)}
+                                        />
+                                        <div className="text-sm text-gray-600 mt-2">
+                                            Position {step.positionIndex + 1}
+                                            {index > 0 && ` · move ${step.movementScore.toFixed(1)}`}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                      )}
+            </div>
+        </div>
+    );
+}
 
 function ChordBrowser() {
     const params = useParams();
@@ -138,6 +339,16 @@ function ChordBrowser() {
                             </Link>
                         </li>
                     ))}
+                    {selectedInstrument === 'cavaquinho' && (
+                        <li>
+                            <Link
+                                to="/cavaquinho/progression"
+                                className="inline-block font-bold rounded py-1 px-3 cursor-pointer no-underline border border-transparent text-blue-500 hover:bg-gray-200"
+                            >
+                                Progression
+                            </Link>
+                        </li>
+                    )}
                 </ul>
                 <main className={`lg:flex lg:gap-5 ${selectedKey !== 'All' ? 'has-sidebar' : ''}`}>
                     {selectedKey !== 'All' && (
@@ -215,7 +426,7 @@ function ChordBrowser() {
                                                 </Link>
                                               ))
                                             : chordsForKey.map((chord, chordIndex) => {
-                                                  const positionsToRender = selectedSuffix !== 'All' ? chord.positions : chord.positions.slice(0, 1);
+                                                  const positionsToRender = selectedKey !== 'All' ? chord.positions : chord.positions.slice(0, 1);
                                                   return positionsToRender.map((position, posIndex) => (
                                                     <Link to={`/${selectedInstrument}/${chord.key}/${chord.suffix}`} key={`${chordIndex}-${posIndex}`} className="no-underline">
                                                         <ChordBlock
@@ -242,6 +453,7 @@ function App() {
     return (
         <Routes>
             <Route path="/" element={<ChordBrowser />} />
+            <Route path="/cavaquinho/progression" element={<ProgressionOptimizerPage />} />
             <Route path="/:instrument" element={<ChordBrowser />} />
             <Route path="/:instrument/:key" element={<ChordBrowser />} />
             <Route path="/:instrument/:key/:suffix" element={<ChordBrowser />} />
