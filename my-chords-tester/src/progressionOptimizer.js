@@ -109,6 +109,17 @@ export const getTransitionScore = (fromPosition, toPosition) => {
 export const findChord = (chordDb, key, suffix) =>
     (chordDb.chords[key] || []).find(chord => chord.suffix === suffix);
 
+const getPositionCandidates = (step) => {
+    const positions = step.chord.positions;
+    const selectedIndex = step.positionIndex;
+
+    if (Number.isInteger(selectedIndex) && selectedIndex >= 0 && selectedIndex < positions.length) {
+        return [{ position: positions[selectedIndex], positionIndex: selectedIndex }];
+    }
+
+    return positions.map((position, positionIndex) => ({ position, positionIndex }));
+};
+
 export const optimizeProgression = (progression, chordDb, options = {}) => {
     const shapeWeight = options.shapeWeight === undefined ? DEFAULT_SHAPE_WEIGHT : options.shapeWeight;
     const chordSteps = progression.map(item => ({
@@ -125,7 +136,7 @@ export const optimizeProgression = (progression, chordDb, options = {}) => {
         };
     }
 
-    let states = chordSteps[0].chord.positions.map((position, positionIndex) => ({
+    let states = getPositionCandidates(chordSteps[0]).map(({ position, positionIndex }) => ({
         score: getShapeComplexity(position) * shapeWeight,
         path: [{
             ...chordSteps[0],
@@ -137,7 +148,7 @@ export const optimizeProgression = (progression, chordDb, options = {}) => {
     }));
 
     chordSteps.slice(1).forEach(step => {
-        states = step.chord.positions.map((position, positionIndex) => {
+        states = getPositionCandidates(step).map(({ position, positionIndex }) => {
             const candidates = states.map(state => {
                 const previous = state.path[state.path.length - 1].position;
                 const movementScore = getTransitionScore(previous, position);

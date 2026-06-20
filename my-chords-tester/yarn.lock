@@ -1814,9 +1814,9 @@
   dependencies:
     "@babel/runtime" "^7.12.5"
 
-"@tombatossals/chords-db@github:rezendehugo/chords-db#feature/cavaquinho-expanded":
+"@tombatossals/chords-db@github:rezendehugo/chords-db#ac8e479f94b31c5906e30f4c868c15acaa7b1f23":
   version "0.6.0"
-  resolved "git+ssh://git@github.com/rezendehugo/chords-db.git#ca98a41e284e10a29dc8b8055a9c5ff00fe8423f"
+  resolved "https://codeload.github.com/rezendehugo/chords-db/tar.gz/ac8e479f94b31c5906e30f4c868c15acaa7b1f23"
 
 "@tootallnate/once@1":
   version "1.1.2"

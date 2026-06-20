@@ -88,4 +88,62 @@ describe('progression optimizer', () => {
 
         expect(findChord(db, 'C', 'm7b5')).toEqual(db.chords.C[0]);
     });
+
+    test('keeps a manual shape fixed while optimizing automatic steps around it', () => {
+        const db = {
+            chords: {
+                C: [{
+                    key: 'C',
+                    suffix: 'major',
+                    positions: [
+                        position([1, 1, 1, 1], [1, 1, 1, 1]),
+                        position([5, 5, 5, 5], [1, 1, 1, 1])
+                    ]
+                }],
+                D: [{
+                    key: 'D',
+                    suffix: 'major',
+                    positions: [
+                        position([1, 1, 1, 1], [1, 1, 1, 1]),
+                        position([5, 5, 5, 5], [1, 1, 1, 1])
+                    ]
+                }],
+                E: [{
+                    key: 'E',
+                    suffix: 'major',
+                    positions: [
+                        position([1, 1, 1, 1], [1, 1, 1, 1]),
+                        position([5, 5, 5, 5], [1, 1, 1, 1])
+                    ]
+                }]
+            }
+        };
+
+        const result = optimizeProgression([
+            { key: 'C', suffix: 'major' },
+            { key: 'D', suffix: 'major', positionIndex: 1 },
+            { key: 'E', suffix: 'major' }
+        ], db);
+
+        expect(result.steps.map(step => step.positionIndex)).toEqual([1, 1, 1]);
+    });
+
+    test('treats an invalid manual shape index as automatic', () => {
+        const db = {
+            chords: {
+                C: [{
+                    key: 'C',
+                    suffix: 'major',
+                    positions: [position([1, 1, 1, 1], [1, 1, 1, 1])]
+                }]
+            }
+        };
+
+        const result = optimizeProgression([
+            { key: 'C', suffix: 'major', positionIndex: 99 }
+        ], db);
+
+        expect(result.steps).toHaveLength(1);
+        expect(result.steps[0].positionIndex).toBe(0);
+    });
 });

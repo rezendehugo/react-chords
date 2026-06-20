@@ -91,16 +91,29 @@ const formatChordName = (key, suffix) => {
 };
 
 const defaultProgression = [
-    { key: 'C', suffix: 'major' },
-    { key: 'A', suffix: 'm7' },
-    { key: 'D', suffix: 'm7' },
-    { key: 'G', suffix: '7' }
+    { key: 'C', suffix: 'major', positionIndex: null },
+    { key: 'A', suffix: 'm7', positionIndex: null },
+    { key: 'D', suffix: 'm7', positionIndex: null },
+    { key: 'G', suffix: '7', positionIndex: null }
 ];
 
 const getCavaquinhoSuffixes = (key) =>
     (cavaquinhoChords.chords[key] || []).map(chord => chord.suffix);
 
-const createProgressionStep = () => ({ key: 'C', suffix: 'major' });
+const createProgressionStep = () => ({ key: 'C', suffix: 'major', positionIndex: null });
+
+const normalizeProgressionStep = (step) => {
+    const chord = (cavaquinhoChords.chords[step.key] || [])
+        .find(candidate => candidate.suffix === step.suffix);
+    const positionIndex = Number.isInteger(step.positionIndex) &&
+        chord &&
+        step.positionIndex >= 0 &&
+        step.positionIndex < chord.positions.length
+        ? step.positionIndex
+        : null;
+
+    return { key: step.key, suffix: step.suffix, positionIndex };
+};
 
 const loadSavedProgression = () => {
     try {
@@ -114,7 +127,11 @@ const loadSavedProgression = () => {
             return defaultProgression;
         }
 
-        return parsed.filter(step => step.key && step.suffix);
+        const validSteps = parsed.filter(step => step && step.key && step.suffix);
+
+        return validSteps.length > 0
+            ? validSteps.map(normalizeProgressionStep)
+            : defaultProgression;
     } catch (error) {
         return defaultProgression;
     }
@@ -142,11 +159,26 @@ function ProgressionOptimizerPage() {
                 const suffixes = getCavaquinhoSuffixes(value);
                 const suffix = suffixes.includes(step.suffix) ? step.suffix : suffixes[0];
 
-                return { key: value, suffix };
+                return { key: value, suffix, positionIndex: null };
+            }
+
+            if (field === 'suffix') {
+                return { ...step, suffix: value, positionIndex: null };
             }
 
             return { ...step, [field]: value };
         }));
+    };
+
+    const selectShape = (index, positionIndex) => {
+        setProgression(current => current.map((step, stepIndex) => stepIndex === index
+            ? { ...step, positionIndex }
+            : step));
+    };
+
+    const cycleShape = (index, currentPositionIndex, positionCount, direction) => {
+        const positionIndex = (currentPositionIndex + direction + positionCount) % positionCount;
+        selectShape(index, positionIndex);
     };
 
     const removeStep = (index) => {
@@ -262,19 +294,53 @@ function ProgressionOptimizerPage() {
                                 </span>
                             </div>
                             <div className="chords-grid grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-5 suffix-selected">
-                                {result.steps.map((step, index) => (
-                                    <div key={`${step.key}-${step.suffix}-${index}`} className="text-center">
-                                        <ChordBlock
-                                            instrument={instruments.cavaquinho.config}
-                                            position={step.position}
-                                            name={formatChordName(step.key, step.suffix)}
-                                        />
-                                        <div className="text-sm text-gray-600 mt-2">
-                                            Position {step.positionIndex + 1}
-                                            {index > 0 && ` · move ${step.movementScore.toFixed(1)}`}
+                                {result.steps.map((step, index) => {
+                                    const positionCount = step.chord.positions.length;
+                                    const isManual = Number.isInteger(progression[index].positionIndex);
+
+                                    return (
+                                        <div key={`${step.key}-${step.suffix}-${index}`} className="text-center">
+                                            <ChordBlock
+                                                instrument={instruments.cavaquinho.config}
+                                                position={step.position}
+                                                name={formatChordName(step.key, step.suffix)}
+                                            />
+                                            <div className="text-sm text-gray-600 mt-2">
+                                                {isManual ? 'Manual' : 'Auto'} · Position {step.positionIndex + 1} of {positionCount}
+                                                {index > 0 && ` · move ${step.movementScore.toFixed(1)}`}
+                                            </div>
+                                            <div className="flex items-center justify-center gap-2 mt-2">
+                                                <button
+                                                    type="button"
+                                                    aria-label={`Previous shape for chord ${index + 1}`}
+                                                    title="Previous shape"
+                                                    onClick={() => cycleShape(index, step.positionIndex, positionCount, -1)}
+                                                    className="border border-gray-300 rounded w-9 h-9 hover:bg-gray-100"
+                                                >
+                                                    ‹
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    aria-label={`Use automatic shape for chord ${index + 1}`}
+                                                    onClick={() => selectShape(index, null)}
+                                                    disabled={!isManual}
+                                                    className="border border-gray-300 rounded h-9 px-3 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    Auto
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    aria-label={`Next shape for chord ${index + 1}`}
+                                                    title="Next shape"
+                                                    onClick={() => cycleShape(index, step.positionIndex, positionCount, 1)}
+                                                    className="border border-gray-300 rounded w-9 h-9 hover:bg-gray-100"
+                                                >
+                                                    ›
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </>
                       )}
