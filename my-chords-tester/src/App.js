@@ -7,6 +7,7 @@ import pianoChords from '@tombatossals/chords-db/lib/piano.json';
 import cavaquinhoChords from '@tombatossals/chords-db/lib/cavaquinho.json';
 import { addMidiToPosition } from '@tombatossals/react-chords/lib/Chord/midiUtils';
 import { optimizeProgression } from './progressionOptimizer';
+import { PrimaryInstrumentNav, CavaquinhoSecondaryNav } from './navigation';
 import './App.css';
 
 const instruments = {
@@ -191,23 +192,15 @@ function ProgressionOptimizerPage() {
         <div className="text-center bg-white text-gray-800">
             <header className="bg-gray-800 text-white p-5 flex justify-between items-center">
                 <h1 className="text-2xl">Chords Database</h1>
-                <Link to="/cavaquinho" className="text-white underline">Back to Cavaquinho</Link>
+                <span className="text-sm text-gray-300">Cavaquinho practice</span>
             </header>
             <div className="p-5 max-w-7xl mx-auto text-left">
-                <ul className="flex list-none py-4 px-0 m-0 border-b border-gray-200 gap-3">
-                    <li>
-                        <Link to="/cavaquinho" className="inline-block font-bold rounded py-1 px-3 cursor-pointer no-underline border border-transparent text-blue-500 hover:bg-gray-200">
-                            Cavaquinho
-                        </Link>
-                    </li>
-                    <li>
-                        <Link to="/cavaquinho/progression" className="inline-block font-bold rounded py-1 px-3 cursor-pointer no-underline border bg-blue-500 text-white border-blue-200">
-                            Progression
-                        </Link>
-                    </li>
-                </ul>
-
-                <h2 className="text-3xl font-medium my-4">Progression Optimizer</h2>
+                <PrimaryInstrumentNav instruments={instruments} selectedInstrument="cavaquinho" />
+                <div className="my-4">
+                    <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">Cavaquinho tools</p>
+                    <h2 className="text-3xl font-medium mt-2 mb-1">Progression Optimizer</h2>
+                    <CavaquinhoSecondaryNav activeView="progressions" />
+                </div>
                 <p className="mb-4 text-gray-700">
                     Choose a chord sequence and the tester will pick cavaquinho shapes with minimum finger movement.
                 </p>
@@ -394,28 +387,7 @@ function ChordBrowser() {
               />
           </header>
           <div className="p-5 max-w-7xl mx-auto text-left">
-                <ul className="flex list-none py-4 px-0 m-0 border-b border-gray-200 gap-3">
-                    {Object.keys(instruments).map(instrumentName => (
-                        <li key={instrumentName} >
-                            <Link
-                                to={`/${instrumentName}`}
-                                className={`inline-block font-bold rounded py-1 px-3 cursor-pointer no-underline border ${selectedInstrument === instrumentName ? 'bg-blue-500 text-white border-blue-200' : 'border-transparent text-blue-500 hover:bg-gray-200'}`}
-                            >
-                                {instruments[instrumentName].name}
-                            </Link>
-                        </li>
-                    ))}
-                    {selectedInstrument === 'cavaquinho' && (
-                        <li>
-                            <Link
-                                to="/cavaquinho/progression"
-                                className="inline-block font-bold rounded py-1 px-3 cursor-pointer no-underline border border-transparent text-blue-500 hover:bg-gray-200"
-                            >
-                                Progression
-                            </Link>
-                        </li>
-                    )}
-                </ul>
+                <PrimaryInstrumentNav instruments={instruments} selectedInstrument={selectedInstrument} />
                 <main className={`lg:flex lg:gap-5 ${selectedKey !== 'All' ? 'has-sidebar' : ''}`}>
                     {selectedKey !== 'All' && (
                         <aside className="lg:flex-shrink-0 lg:w-52 py-4">
@@ -444,6 +416,11 @@ function ChordBrowser() {
                     )}
                     <div className="flex-1 min-w-0">
                         <h2 className="text-3xl font-medium my-4">{instrument.name}</h2>
+                        {selectedInstrument === 'cavaquinho' && (
+                            <div className="mb-4">
+                                <CavaquinhoSecondaryNav activeView="library" />
+                            </div>
+                        )}
                         <ul className="flex flex-wrap list-none p-0 pb-5 m-0 items-center gap-3">
                             <li className="font-bold">Keys:</li>
                             <li >

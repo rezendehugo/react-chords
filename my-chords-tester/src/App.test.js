@@ -27,6 +27,7 @@ describe('Cavaquinho Instrument Support', () => {
     expect(screen.getByRole('link', { name: 'Ukulele' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Piano' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Cavaquinho' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Progressions' })).not.toBeInTheDocument();
   });
 
   test('cavaquinho is navigable', () => {
@@ -115,6 +116,50 @@ describe('Cavaquinho Instrument Support', () => {
     expect(screen.getByText('Progression Optimizer')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add chord' })).toBeInTheDocument();
     expect(screen.getByText('Total movement score:')).toBeInTheDocument();
+  });
+
+  test('shows a cavaquinho-only secondary navigation on the chord library page', () => {
+    window.history.pushState({}, '', '/cavaquinho');
+
+    render(
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    );
+
+    expect(screen.getByRole('link', { name: 'Guitar' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ukulele' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Piano' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Cavaquinho' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Chord Library' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Progressions' })).toBeInTheDocument();
+  });
+
+  test('marks the progression section active on the progression route', () => {
+    window.history.pushState({}, '', '/cavaquinho/progression');
+
+    render(
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    );
+
+    expect(screen.getByRole('link', { name: 'Progressions' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Chord Library' })).not.toHaveAttribute('aria-current', 'page');
+    expect(screen.getByText('Cavaquinho tools')).toBeInTheDocument();
+  });
+
+  test('does not render the cavaquinho secondary navigation on non-cavaquinho routes', () => {
+    window.history.pushState({}, '', '/guitar');
+
+    render(
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    );
+
+    expect(screen.queryByRole('link', { name: 'Chord Library' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Progressions' })).not.toBeInTheDocument();
   });
 
   test('updates the optimized progression from dropdown selections', () => {
