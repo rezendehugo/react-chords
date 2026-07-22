@@ -8,7 +8,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
-    "@tombatossals/chords-db": "github:rezendehugo/chords-db#ac8e479f94b31c5906e30f4c868c15acaa7b1f23",
+    "@tombatossals/chords-db": "github:rezendehugo/chords-db#8352b25eec4a12c3747dfb69537bbd648b0394ad",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.4",

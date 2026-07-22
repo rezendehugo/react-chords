@@ -1814,9 +1814,9 @@
   dependencies:
     "@babel/runtime" "^7.12.5"
 
-"@tombatossals/chords-db@github:rezendehugo/chords-db#ac8e479f94b31c5906e30f4c868c15acaa7b1f23":
+"@tombatossals/chords-db@github:rezendehugo/chords-db#8352b25eec4a12c3747dfb69537bbd648b0394ad":
   version "0.6.0"
-  resolved "https://codeload.github.com/rezendehugo/chords-db/tar.gz/ac8e479f94b31c5906e30f4c868c15acaa7b1f23"
+  resolved "https://codeload.github.com/rezendehugo/chords-db/tar.gz/8352b25eec4a12c3747dfb69537bbd648b0394ad"
 
 "@tootallnate/once@1":
   version "1.1.2"

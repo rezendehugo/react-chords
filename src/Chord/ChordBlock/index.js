@@ -2,14 +2,41 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import Chord from '../'
 
+let sharedAudioContext
+
+const getAudioContext = () => {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  const AudioContextConstructor = window.AudioContext || window.webkitAudioContext
+  if (!AudioContextConstructor) {
+    return null
+  }
+
+  if (!sharedAudioContext || sharedAudioContext.state === 'closed') {
+    sharedAudioContext = new AudioContextConstructor()
+  }
+
+  return sharedAudioContext
+}
+
 // Função para tocar o som do acorde
-const playChord = (position) => {
+const playChord = async (position) => {
   const midiNotes = position.midi || []
   if (!midiNotes || midiNotes.length === 0) {
     return
   }
 
-  const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+  const audioContext = getAudioContext()
+  if (!audioContext) {
+    return
+  }
+
+  if (audioContext.state === 'suspended') {
+    await audioContext.resume()
+  }
+
   const midiToFreq = (midi) => 440 * Math.pow(2, (midi - 69) / 12)
 
   midiNotes.forEach(midiNote => {

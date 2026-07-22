@@ -111,6 +111,33 @@ export default function PianoChord () {
 
 O diretório `my-chords-tester` contém uma aplicação React usada para validar e demonstrar a biblioteca com dados reais de acordes.
 
+### Fonte de dados do cavaquinho
+
+O fluxo atual de cavaquinho neste repositório depende intencionalmente do fork `rezendehugo/chords-db`, não do upstream puro.
+
+- Dependência travada no tester: `@tombatossals/chords-db` em `8352b25eec4a12c3747dfb69537bbd648b0394ad`
+- Branch de referência para validação local: `codex/expand-cavaquinho-shapes`
+- Repositório esperado ao lado deste projeto: `../chords-db`
+
+Antes de validar mudanças de cavaquinho no `react-chords`, rode no repositório irmão:
+
+```bash
+cd ../chords-db
+git checkout codex/expand-cavaquinho-shapes
+npm test -- --runInBand src/db/cavaquinho.test.js src/db/cavaquinho.6.test.js
+npm test -- --runInBand src/db/cavaquinho.derived-suffixes.test.js src/db/cavaquinho.suffix-metadata.test.js src/db/cavaquinho.suffix-contract.test.js
+npm run build
+```
+
+Depois, volte para este repositório e valide o app de testes com o mesmo conjunto de dados:
+
+```bash
+cd my-chords-tester
+npm install
+npm test -- --watchAll=false
+npm run build
+```
+
 Rotas principais:
 
 - `#/guitar`: acordes de guitarra.
