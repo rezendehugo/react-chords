@@ -67,13 +67,17 @@ const ChordBlock = ({ instrument, position, name, isPiano }) => {
   }
 
   return (
-    <div className='chord-container flex flex-col items-center text-center' style={{ display: 'ruby' }}>
-      <div className='flex justify-center items-center mb-2'>
-        <h4 className='text-base font-normal mr-2 h-8 flex items-center'>{name}</h4>
+    <div className='chord-container flex flex-col items-center text-center'>
+      <div className='flex items-center justify-center gap-2 mb-2 w-full'>
+        <h4 className='text-lg font-semibold leading-tight flex items-center justify-center min-h-[2rem]'>{name}</h4>
         {position.midi && position.midi.length > 0 && (
-          <button onClick={handlePlayClick} aria-label='Tocar acorde' className='cursor-pointer border border-gray-300 rounded-full w-6 h-6 flex items-center justify-center bg-gray-100 hover:bg-gray-200'>
-            <svg width='12' height='12' viewBox='0 0 10 10'>
-              <path d='M 2 1 L 2 9 L 8 5 Z' fill='#444' />
+          <button
+            onClick={handlePlayClick}
+            aria-label='Tocar acorde'
+            className='cursor-pointer w-5 h-5 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 focus-visible:text-slate-700'
+          >
+            <svg width='10' height='10' viewBox='0 0 10 10'>
+              <path d='M 2 1 L 2 9 L 8 5 Z' fill='currentColor' />
             </svg>
           </button>
         )}

@@ -21,6 +21,16 @@ const renderWithHashRoute = (route) => {
 
 describe('Cavaquinho Instrument Support', () => {
   beforeEach(() => {
+    window.matchMedia = jest.fn().mockImplementation((query) => ({
+      matches: query === '(prefers-color-scheme: dark)' ? false : false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn()
+    }));
     window.localStorage.clear();
     window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}`);
   });
@@ -43,6 +53,13 @@ describe('Cavaquinho Instrument Support', () => {
     const cavaquinhoLink = screen.getByRole('link', { name: 'Cavaquinho' });
     expect(cavaquinhoLink).toBeInTheDocument();
     expect(cavaquinhoLink.closest('a').getAttribute('href')).toContain('#/cavaquinho');
+  });
+
+  test('uses the page heading as the primary instrument label', () => {
+    renderWithHashRoute('/guitar');
+
+    expect(screen.getByRole('heading', { name: 'Guitar', level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Guitar' })).toHaveAttribute('aria-current', 'page');
   });
 
   test('renders every C major cavaquinho position on the C key page', () => {
@@ -98,7 +115,7 @@ describe('Cavaquinho Instrument Support', () => {
 
     expect(screen.getByText('Progression Optimizer')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add chord' })).toBeInTheDocument();
-    expect(screen.getByText('Total movement score:')).toBeInTheDocument();
+    expect(screen.queryByText('Total movement score:')).not.toBeInTheDocument();
   });
 
   test('shows a cavaquinho-only secondary navigation on the chord library page', () => {
@@ -117,7 +134,43 @@ describe('Cavaquinho Instrument Support', () => {
 
     expect(screen.getByRole('link', { name: 'Progressions' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', { name: 'Chord Library' })).not.toHaveAttribute('aria-current', 'page');
-    expect(screen.getByText('Cavaquinho tools')).toBeInTheDocument();
+    expect(screen.getByText('Cavaquinho practice')).toBeInTheDocument();
+  });
+
+  test('marks the active key chip on the cavaquinho library route', () => {
+    renderWithHashRoute('/cavaquinho/C');
+
+    const keyFilter = screen.getByLabelText('Cavaquinho keys');
+
+    expect(within(keyFilter).getByRole('link', { name: 'C' })).toHaveAttribute('aria-current', 'page');
+    expect(within(keyFilter).getByRole('link', { name: 'All' })).not.toHaveAttribute('aria-current', 'page');
+    expect(screen.getByText('Focused on key C with suffix filters and larger diagram density.')).toBeInTheDocument();
+  });
+
+  test('renders and persists the cavaquinho theme toggle', () => {
+    renderWithHashRoute('/cavaquinho');
+
+    const appShell = document.querySelector('[data-theme]');
+    const topBar = screen.getByRole('banner');
+    const toggle = within(topBar).getByRole('button', { name: 'Switch to dark mode' });
+
+    expect(appShell).toHaveAttribute('data-theme', 'light');
+    expect(window.localStorage.getItem('testerThemePreference')).toBe('light');
+
+    fireEvent.click(toggle);
+
+    expect(appShell).toHaveAttribute('data-theme', 'dark');
+    expect(window.localStorage.getItem('testerThemePreference')).toBe('dark');
+    expect(screen.getByRole('button', { name: 'Switch to light mode' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('renders the global theme toggle on non-cavaquinho routes', () => {
+    renderWithHashRoute('/guitar');
+
+    const topBar = screen.getByRole('banner');
+
+    expect(within(topBar).getByRole('button', { name: 'Switch to dark mode' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Chord Library' })).not.toBeInTheDocument();
   });
 
   test('does not render the cavaquinho secondary navigation on non-cavaquinho routes', () => {
@@ -153,23 +206,19 @@ describe('Cavaquinho Instrument Support', () => {
   test('cycles and releases a manual shape for one progression chord', async () => {
     renderWithHashRoute('/cavaquinho/progression');
 
-    const automaticShape = screen.getByText(/^Auto · Position \d+ of 7$/);
-    const automaticPosition = Number(automaticShape.textContent.match(/Position (\d+)/)[1]);
+    const automaticShape = screen.getByText(/^\d+\/7$/);
+    const automaticPosition = Number(automaticShape.textContent.match(/^(\d+)/)[1]);
     const expectedPosition = automaticPosition === 7 ? 1 : automaticPosition + 1;
 
     fireEvent.click(screen.getByRole('button', { name: 'Next shape for chord 1' }));
 
-    expect(screen.getByText(`Manual · Position ${expectedPosition} of 7`)).toBeInTheDocument();
+    expect(screen.getByText(`${expectedPosition}/7`)).toBeInTheDocument();
 
     await waitFor(() => {
       const saved = JSON.parse(window.localStorage.getItem('cavaquinhoProgression'));
       expect(saved[0].positionIndex).toBe(expectedPosition - 1);
     });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Use automatic shape for chord 1' }));
-
-    expect(screen.getByText(/^Auto · Position \d+ of 7$/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Use automatic shape for chord 1' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Use automatic shape for chord 1' })).not.toBeInTheDocument();
   });
 
   test('clears only the changed chord manual shape', async () => {
@@ -184,9 +233,8 @@ describe('Cavaquinho Instrument Support', () => {
       expect(saved[0].positionIndex).toBeNull();
       expect(Number.isInteger(saved[1].positionIndex)).toBe(true);
     });
-
-    expect(screen.getByRole('button', { name: 'Use automatic shape for chord 1' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Use automatic shape for chord 2' })).not.toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Use automatic shape for chord 1' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Use automatic shape for chord 2' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Next shape for chord 1' }));
     fireEvent.change(screen.getByLabelText('Chord 1 suffix'), { target: { value: 'maj7' } });
@@ -213,7 +261,7 @@ describe('Cavaquinho Instrument Support', () => {
 
     renderWithHashRoute('/cavaquinho/progression');
 
-    expect(screen.getByText(`Manual · Position ${savedPosition + 1} of 7`)).toBeInTheDocument();
+    expect(screen.getByText(`${savedPosition + 1}/7`)).toBeInTheDocument();
   });
 
   test('falls back to automatic selection for an outdated saved shape', () => {
@@ -224,7 +272,7 @@ describe('Cavaquinho Instrument Support', () => {
 
     renderWithHashRoute('/cavaquinho/progression');
 
-    expect(screen.getByText(/^Auto · Position \d+ of 7$/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Use automatic shape for chord 1' })).toBeDisabled();
+    expect(screen.getByText(/^\d+\/7$/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Use automatic shape for chord 1' })).not.toBeInTheDocument();
   });
 });
